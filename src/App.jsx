@@ -13,15 +13,16 @@ import Schedule from "./pages/Schedule";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
-
+import ResetPassword from "./pages/ResetPassword"; // <--- 1. DODANY IMPORT
 
 function BottomNavigation() {
-
   const location = useLocation();
 
+  // Ukrywamy nawigację dolną na stronach logowania, rejestracji i resetu hasła
   if (
     location.pathname === "/" ||
-    location.pathname === "/register"
+    location.pathname === "/register" ||
+    location.pathname.startsWith("/reset-password") // <--- Ukrycie paska dolnego na ekranie resetu
   ) {
     return null;
   }
@@ -55,7 +56,6 @@ function BottomNavigation() {
   ];
 
   return (
-
     <nav
       className="
         fixed
@@ -72,7 +72,6 @@ function BottomNavigation() {
         transition-colors
       "
     >
-
       <div
         className="
           mx-auto
@@ -84,9 +83,7 @@ function BottomNavigation() {
           py-2
         "
       >
-
         {navigationItems.map((item) => (
-
           <NavLink
             key={item.path}
             to={item.path}
@@ -110,7 +107,6 @@ function BottomNavigation() {
               }
             `}
           >
-
             <span className="text-xl">
               {item.icon}
             </span>
@@ -118,28 +114,17 @@ function BottomNavigation() {
             <span className="mt-1">
               {item.label}
             </span>
-
           </NavLink>
-
         ))}
-
       </div>
-
     </nav>
-
   );
-
 }
 
-
 function AppContent() {
-
   return (
-
     <>
-
       <Routes>
-
         <Route
           path="/"
           element={<Login />}
@@ -148,6 +133,12 @@ function AppContent() {
         <Route
           path="/register"
           element={<Register />}
+        />
+
+        {/* 2. DODANA TRASA DLA RESETOWANIA HASŁA */}
+        <Route
+          path="/reset-password/:token"
+          element={<ResetPassword />}
         />
 
         <Route
@@ -174,29 +165,19 @@ function AppContent() {
           path="/profile"
           element={<Profile />}
         />
-
       </Routes>
 
       <BottomNavigation />
-
     </>
-
   );
-
 }
 
-
 function App() {
-
   return (
-
     <BrowserRouter>
       <AppContent />
     </BrowserRouter>
-
   );
-
 }
-
 
 export default App;

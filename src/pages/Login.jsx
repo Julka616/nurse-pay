@@ -5,13 +5,11 @@ import api from "../utils/api";
 function Login() {
   const navigate = useNavigate();
 
-  // Tryb: false = logowanie, true = reset hasła
+  // Tryb: false = logowanie, true = prośba o link na email
   const [isResetMode, setIsResetMode] = useState(false);
 
-  // Stany dla pól formularza
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
 
   // Obsługa logowania
   const handleLogin = async () => {
@@ -33,31 +31,20 @@ function Login() {
     }
   };
 
-  // Obsługa resetu hasła
-  const handleResetPassword = async () => {
+  // Wysyłanie maila z linkiem resetującym
+  const handleSendResetEmail = async () => {
     if (!email) {
       alert("Podaj swój adres e-mail!");
       return;
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      alert("Nowe hasło musi mieć co najmniej 6 znaków!");
-      return;
-    }
-
     try {
-      const res = await api.post("/auth/reset-password", {
-        email,
-        newPassword,
-      });
-
-      alert(res.data.message || "Hasło zostało pomyślnie zmienione! Możesz się zalogować.");
+      const res = await api.post("/auth/forgot-password", { email });
+      alert(res.data.message || "Sprawdź swoją skrzynkę e-mail!");
       setIsResetMode(false);
-      setPassword("");
-      setNewPassword("");
     } catch (err) {
       alert(
-        err.response?.data?.message || "Nie udało się zresetować hasła."
+        err.response?.data?.message || "Nie udało się wysłać wiadomości."
       );
     }
   };
@@ -73,7 +60,7 @@ function Login() {
           </h1>
 
           <p className="text-gray-500 dark:text-slate-400">
-            {isResetMode ? "Resetowanie hasła" : "Zaloguj się"}
+            {isResetMode ? "Przywracanie dostępu" : "Zaloguj się"}
           </p>
         </div>
 
@@ -124,8 +111,12 @@ function Login() {
             </p>
           </div>
         ) : (
-          /* FORMULARZ RESETU HASŁA */
+          /* FORMULARZ WYSYŁANIA MAILA */
           <div className="space-y-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              Wpisz adres e-mail powiązany z Twoim kontem. Wyślemy Ci link do ustawienia nowego hasła.
+            </p>
+
             <input
               type="email"
               placeholder="Podaj swój e-mail"
@@ -134,19 +125,11 @@ function Login() {
               className="w-full p-3 border dark:border-slate-700 dark:bg-slate-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
 
-            <input
-              type="password"
-              placeholder="Ustaw nowe hasło"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full p-3 border dark:border-slate-700 dark:bg-slate-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-
             <button
-              onClick={handleResetPassword}
+              onClick={handleSendResetEmail}
               className="w-full bg-sky-600 hover:bg-sky-700 text-white p-3 rounded-xl font-bold transition-colors"
             >
-              Zapisz nowe hasło
+              Wyślij link resetujący
             </button>
 
             <button
