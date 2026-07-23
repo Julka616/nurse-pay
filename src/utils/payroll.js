@@ -30,18 +30,18 @@ function getEasterSunday(year) {
     const easterStr = easter.toISOString().slice(0, 10);
   
     return new Set([
-      `${year}-01-01`, // Nowy Rok
-      `${year}-01-06`, // Trzech Króli
-      addDays(easterStr, 1), // Poniedziałek Wielkanocny
-      `${year}-05-01`, // Święto Pracy
-      `${year}-05-03`, // Święto Konstytucji 3 Maja
-      addDays(easterStr, 49), // Zesłanie Ducha Świętego
-      addDays(easterStr, 60), // Boże Ciało
-      `${year}-08-15`, // Wniebowzięcie NMP
-      `${year}-11-01`, // Wszystkich Świętych
-      `${year}-11-11`, // Niepodległość
-      `${year}-12-25`, // Boże Narodzenie (1 dzień)
-      `${year}-12-26`  // Boże Narodzenie (2 dzień)
+      `${year}-01-01`,
+      `${year}-01-06`,
+      addDays(easterStr, 1),
+      `${year}-05-01`,
+      `${year}-05-03`,
+      addDays(easterStr, 49),
+      addDays(easterStr, 60),
+      `${year}-08-15`,
+      `${year}-11-01`,
+      `${year}-11-11`,
+      `${year}-12-25`,
+      `${year}-12-26`
     ]);
   }
   
@@ -51,53 +51,131 @@ function getEasterSunday(year) {
     return getPolishHolidays(year).has(dateStr);
   }
   
-  // Dzieli dyżur na segmenty przypadające na poszczególne dni kalendarzowe.
-  // Dyżur dzienny (7:00-19:00) nie przekracza północy -> jeden segment.
-  // Dyżur nocny (19:00-7:00) dzieli się: 5h na dzień startu, 7h na dzień następny.
+  // Zwraca procent dodatku wynikający z TYPU DNIA dla danej daty.
+  // Święto ma pierwszeństwo przed sobotą/niedzielą (prawo traktuje święto tak jak niedzielę).
+  function getDayTypePercent(dateStr, settings) {
+  
+    if (isPolishHoliday(dateStr)) {
+      return Number(settings.holidayPercent || 0);
+    }
+  
+    const day = new Date(`${dateStr}T12:00:00`).getDay();
+  
+    if (day === 6) {
+      return Number(settings.saturdayPercent || 0);
+    }
+  
+    if (day === 0) {
+      return Number(settings.sundayPercent || 0);
+    }
+  
+    return 0;
+  
+  }
+  
+  // Dzieli dyżur na odcinki godzinowe zgodnie z rzeczywistym czasem zegarowym.
+  // Dyżur dzienny (7:00-19:00) nie przekracza północy i nie wchodzi w porę nocną -> jeden odcinek.
+  // Dyżur nocny (19:00-07:00) dzieli się na 4 odcinki wg ustawowej pory nocnej (22:00-06:00):
+  //   19:00-22:00 (3h, dzień startu, bez dodatku nocnego)
+  //   22:00-24:00 (2h, dzień startu, pora nocna)
+  //   00:00-06:00 (6h, dzień następny, pora nocna)
+  //   06:00-07:00 (1h, dzień następny, bez dodatku nocnego)
   function getShiftSegments(shift) {
   
     const totalHours = Number(shift.hours) || 0;
   
     if (shift.type !== "night") {
-      return [{ date: shift.date, hours: totalHours }];
+      return [{ date: shift.date, hours: totalHours, isNight: false }];
     }
   
-    const firstPartHours = totalHours * (5 / 12);
-    const secondPartHours = totalHours * (7 / 12);
+    // Podział 3h/2h/6h/1h zakłada standardowy dyżur nocny 19:00-07:00 (12h).
+    // Jeśli kiedyś pojawią się dyżury nocne o innej długości, ten podział przestanie
+    // być dokładny - na razie w całej aplikacji dyżury zawsze mają 12h.
+    if (totalHours !== 12) {
+      return [{ date: shift.date, hours: totalHours, isNight: true }];
+    }
+  
     const nextDate = addDays(shift.date, 1);
   
     return [
-      { date: shift.date, hours: firstPartHours },
-      { date: nextDate, hours: secondPartHours }
+      { date: shift.date, hours: 3, isNight: false }, // 19:00-22:00
+      { date: shift.date, hours: 2, isNight: true },  // 22:00-24:00
+      { date: nextDate, hours: 6, isNight: true },    // 00:00-06:00
+      { date: nextDate, hours: 1, isNight: false }    // 06:00-07:00
     ];
+  
   }
   
-  // Liczy kwotę za jeden segment godzin, sumując dodatki od bazy (a nie mnożąc kaskadowo)
-  function calculateSegmentAmount(segmentDate, hours, shiftType, settings) {
+  // Liczy DOPŁATĘ za jeden odcinek godzin (nie pełną stawkę godzinową!).
+  // Pensja podstawowa już pokrywa przepracowane godziny wg grafiku -
+  // tu liczymy wyłącznie dodatek za porę nocną / weekend / święto.
+  function calculateSegmentAmount(segment, settings) {
   
-    const day = new Date(`${segmentDate}T12:00:00`).getDay();
+    const bonusPercent =
+      getDayTypePercent(segment.date, settings) +
+      (segment.isNight ? Number(settings.nightPercent || 0) : 0);
   
-    let bonusPercent = 0;
-  
-    if (shiftType === "night") {
-      bonusPercent += Number(settings.nightPercent || 0);
+    if (bonusPercent === 0) {
+      return 0;
     }
   
-    if (day === 6) {
-      bonusPercent += Number(settings.saturdayPercent || 0);
+    return segment.hours * Number(settings.hourRate || 0) * (bonusPercent / 100);
+  
+  }
+  
+  // Zwraca zakres dat (YYYY-MM-DD) trzech pełnych miesięcy kalendarzowych
+  // bezpośrednio poprzedzających miesiąc, w którym wypada podana data.
+  function getThreeMonthWindowBefore(dateStr) {
+  
+    const year = Number(dateStr.slice(0, 4));
+    const month = Number(dateStr.slice(5, 7)); // 1-12
+  
+    const startDate = new Date(Date.UTC(year, month - 1 - 3, 1));
+    const endDate = new Date(Date.UTC(year, month - 1, 0)); // dzień 0 = ostatni dzień poprzedniego miesiąca
+  
+    return {
+      start: startDate.toISOString().slice(0, 10),
+      end: endDate.toISOString().slice(0, 10)
+    };
+  
+  }
+  
+  // Liczy średnią stawkę dodatków (zł/h) na podstawie przepracowanych dyżurów
+  // (nie urlopowych) w 3 pełnych miesiącach kalendarzowych poprzedzających
+  // miesiąc, w którym wypada dany dzień urlopu.
+  function getAverageBonusRate(allShifts, vacationDate, settings) {
+  
+    const { start, end } = getThreeMonthWindowBefore(vacationDate);
+  
+    let sumHours = 0;
+    let sumBonus = 0;
+  
+    allShifts.forEach((shift) => {
+  
+      if (shift.type === "vacation" || !shift.date) {
+        return;
+      }
+  
+      if (shift.date < start || shift.date > end) {
+        return;
+      }
+  
+      const segments = getShiftSegments(shift);
+  
+      segments.forEach((segment) => {
+        sumBonus += calculateSegmentAmount(segment, settings);
+      });
+  
+      sumHours += Number(shift.hours || 0);
+  
+    });
+  
+    if (sumHours === 0) {
+      return 0;
     }
   
-    if (day === 0) {
-      bonusPercent += Number(settings.sundayPercent || 0);
-    }
+    return sumBonus / sumHours;
   
-    if (isPolishHoliday(segmentDate)) {
-      bonusPercent += Number(settings.holidayPercent || 0);
-    }
-  
-    const baseAmount = hours * Number(settings.hourRate || 0);
-  
-    return baseAmount * (1 + bonusPercent / 100);
   }
   
   // Liczy przewidywaną wypłatę na podstawie listy dyżurów i ustawień wynagrodzenia
@@ -108,27 +186,28 @@ function getEasterSunday(year) {
     shifts.forEach((shift) => {
   
       if (shift.type === "vacation") {
-        total += Number(settings.vacationDailyRate || 0);
+  
+        const hours = Number(shift.hours || 0);
+        const averageRate = getAverageBonusRate(shifts, shift.date, settings);
+  
+        total += hours * averageRate;
+  
         return;
+  
       }
   
       if (!shift.date) {
-        total += Number(shift.hours || 0) * Number(settings.hourRate || 0);
         return;
       }
   
       const segments = getShiftSegments(shift);
   
       segments.forEach((segment) => {
-        total += calculateSegmentAmount(
-          segment.date,
-          segment.hours,
-          shift.type,
-          settings
-        );
+        total += calculateSegmentAmount(segment, settings);
       });
   
     });
   
     return total;
+  
   }
