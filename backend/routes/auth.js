@@ -10,12 +10,18 @@ const router = express.Router();
 
 // Konfiguracja wysyłki maili (np. Gmail)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // "Hasło aplikacji" wygenerowane w Google
-  },
-});
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // port 587 wymaga secure: false
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    family: 4, // Wymusza IPv4, aby uniknąć błędów ENETUNREACH (IPv6)
+  });
 
 // Rejestracja
 router.post("/register", async (req, res) => {
