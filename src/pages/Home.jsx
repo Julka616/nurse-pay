@@ -105,6 +105,12 @@ function Home() {
 
 
 
+  const vacationShifts = shifts.filter(
+    (shift) => shift.type === "vacation"
+  ).length;
+
+
+
   const holidayShifts = shifts.filter(
     (shift) => Boolean(shift.holiday)
   ).length;
@@ -156,6 +162,15 @@ function Home() {
 
 
     shifts.forEach((shift) => {
+
+      if (shift.type === "vacation") {
+
+        total += Number(settings.vacationDailyRate || 0);
+
+        return;
+
+      }
+
 
       const hours =
         Number(shift.hours || 0);
@@ -374,6 +389,20 @@ function Home() {
               <p className="text-3xl font-bold text-slate-800 dark:text-white">
 
                 {holidayShifts}
+
+              </p>
+
+            </div>
+
+
+
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow transition-colors">
+
+              <p className="text-slate-600 dark:text-slate-300">🏖️ Urlopy</p>
+
+              <p className="text-3xl font-bold text-slate-800 dark:text-white">
+
+                {vacationShifts}
 
               </p>
 

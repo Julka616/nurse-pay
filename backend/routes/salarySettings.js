@@ -24,7 +24,8 @@ router.get("/", auth, async (req, res) => {
         nightPercent: 0,
         saturdayPercent: 0,
         sundayPercent: 0,
-        holidayPercent: 0
+        holidayPercent: 0,
+        vacationDailyRate: 0
 
       };
 
@@ -59,7 +60,8 @@ router.put("/", auth, async (req, res) => {
       nightPercent,
       saturdayPercent,
       sundayPercent,
-      holidayPercent
+      holidayPercent,
+      vacationDailyRate
     } = req.body;
 
     const settings = await SalarySettings.findOneAndUpdate(
@@ -73,7 +75,8 @@ router.put("/", auth, async (req, res) => {
           nightPercent,
           saturdayPercent,
           sundayPercent,
-          holidayPercent
+          holidayPercent,
+          vacationDailyRate
         }
       },
       {

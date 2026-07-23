@@ -37,7 +37,14 @@ const salarySettingsSchema = new mongoose.Schema({
     holidayPercent:{
         type:Number,
         default:0
+    },
+
+    vacationDailyRate:{
+        type:Number,
+        default:0
     }
+
+},{
 
 },{
     timestamps:true

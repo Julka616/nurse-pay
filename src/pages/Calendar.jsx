@@ -459,6 +459,14 @@ shift?.holiday
 
 :
 
+shift?.type==="vacation"
+
+?
+
+"bg-amber-500 text-white"
+
+:
+
 shift?.type==="day"
 
 ?
@@ -520,6 +528,11 @@ shift?.type==="night"
 <div className="flex items-center gap-2">
   <span className="w-4 h-4 rounded bg-red-500 inline-block"></span>
   Święto
+</div>
+
+<div className="flex items-center gap-2">
+  <span className="w-4 h-4 rounded bg-amber-500 inline-block"></span>
+  Urlop
 </div>
 
 <div className="flex items-center gap-2">
@@ -622,6 +635,21 @@ className={`w-full p-3 rounded-xl mb-2 font-bold ${type==="night" ? "bg-indigo-6
 
 <button
 
+onClick={()=>{ setType("vacation"); setHoliday(false); }}
+
+className={`w-full p-3 rounded-xl mb-2 font-bold ${type==="vacation" ? "bg-amber-500 text-white" : "bg-amber-200 text-amber-900 dark:bg-amber-950 dark:text-amber-100"}`}
+
+>
+🏖️ Urlop
+</button>
+
+
+
+{
+type!=="vacation" &&
+
+<button
+
 onClick={()=>setHoliday(!holiday)}
 
 className={`w-full p-3 rounded-xl mb-3 font-bold ${holiday ? "bg-red-500 text-white" : "bg-red-200 text-red-900 dark:bg-red-950 dark:text-red-100"}`}
@@ -629,6 +657,7 @@ className={`w-full p-3 rounded-xl mb-3 font-bold ${holiday ? "bg-red-500 text-wh
 >
 🟥 Święto
 </button>
+}
 
 
 

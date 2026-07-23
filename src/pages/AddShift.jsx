@@ -220,19 +220,49 @@ function AddShift() {
 
 
 
-        <label className="flex gap-3 items-center">
+        <button
+          type="button"
+          onClick={() => {
+            setType("vacation");
+            setHoliday(false);
+          }}
+          className={`
+            w-full
+            p-4
+            rounded-xl
+            transition
 
-          <input
-            type="checkbox"
-            checked={holiday}
-            onChange={(event) =>
-              setHoliday(event.target.checked)
+            ${
+              type === "vacation"
+                ? "bg-amber-500 text-white"
+                : "bg-amber-100 text-slate-800"
             }
-          />
+          `}
+        >
 
-          🎄 Dyżur w święto
+          🏖️ Urlop
 
-        </label>
+        </button>
+
+
+
+        {type !== "vacation" && (
+
+          <label className="flex gap-3 items-center">
+
+            <input
+              type="checkbox"
+              checked={holiday}
+              onChange={(event) =>
+                setHoliday(event.target.checked)
+              }
+            />
+
+            🎄 Dyżur w święto
+
+          </label>
+
+        )}
 
 
 

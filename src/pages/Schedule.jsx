@@ -211,18 +211,23 @@ function Schedule() {
 
               <p className="text-slate-600 dark:text-slate-300">
 
-                {shift.type === "day"
+              {shift.type === "day"
                   ? "☀️ Dzień"
-                  : "🌙 Noc"}
-
+                  : shift.type === "night"
+                    ? "🌙 Noc"
+                    : "🏖️ Urlop"}
               </p>
 
 
-              <p className="text-slate-600 dark:text-slate-300">
+              {shift.type !== "vacation" && (
 
-                ⏰ {shift.hours} godzin
+<p className="text-slate-600 dark:text-slate-300">
 
-              </p>
+  ⏰ {shift.hours} godzin
+
+</p>
+
+)}
 
 
               {shift.weekend && (

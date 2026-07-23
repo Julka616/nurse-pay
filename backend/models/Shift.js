@@ -15,7 +15,7 @@ const shiftSchema = new mongoose.Schema({
 
     type:{
         type:String,
-        enum:["day","night"],
+        enum:["day","night","vacation"],
         required:true
     },
 

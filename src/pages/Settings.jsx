@@ -12,7 +12,8 @@ hourRate:40,
 nightPercent:0,
 saturdayPercent:0,
 sundayPercent:0,
-holidayPercent:0
+holidayPercent:0,
+vacationDailyRate:0
 
 });
 
@@ -44,7 +45,8 @@ const loadSettings = async () => {
       nightPercent: response.data.nightPercent ?? 0,
       saturdayPercent: response.data.saturdayPercent ?? 0,
       sundayPercent: response.data.sundayPercent ?? 0,
-      holidayPercent: response.data.holidayPercent ?? 0
+      holidayPercent: response.data.holidayPercent ?? 0,
+      vacationDailyRate: response.data.vacationDailyRate ?? 0
 
     });
 
@@ -325,6 +327,34 @@ type="number"
 name="holidayPercent"
 
 value={settings.holidayPercent}
+
+onChange={handleChange}
+
+className="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl p-3"
+
+/>
+
+</div>
+
+
+
+
+<div>
+
+<label className="text-slate-700 dark:text-slate-200">
+
+🏖️ Stawka dzienna za urlop
+
+</label>
+
+
+<input
+
+type="number"
+
+name="vacationDailyRate"
+
+value={settings.vacationDailyRate}
 
 onChange={handleChange}
 
