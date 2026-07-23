@@ -64,23 +64,44 @@ function Home() {
 
   }, []);
 
-  const dayShifts = shifts.filter(
+  // --- FILTROWANIE DYŻURÓW DO BIEŻĄCEGO MIESIĄCA ---
+  // Ustalanie bieżącego roku i miesiąca na podstawie najnowszego dyżuru lub aktualnej daty
+  const now = new Date();
+  const activeShiftDate = shifts.length > 0 && shifts[0].date
+    ? new Date(`${shifts[0].date}T12:00:00`)
+    : now;
+
+  const currentYear = activeShiftDate.getFullYear();
+  const currentMonth = activeShiftDate.getMonth();
+
+  // Dyżury filtrowane tylko dla wyświetlanego (bieżącego) miesiąca
+  const currentMonthShifts = shifts.filter((shift) => {
+    if (!shift.date) return false;
+    const shiftDate = new Date(`${shift.date}T12:00:00`);
+    return (
+      shiftDate.getFullYear() === currentYear &&
+      shiftDate.getMonth() === currentMonth
+    );
+  });
+
+  // Statystyki liczone TYLKO z dyżurów bieżącego miesiąca
+  const dayShifts = currentMonthShifts.filter(
     (shift) => shift.type === "day"
   ).length;
 
-  const nightShifts = shifts.filter(
+  const nightShifts = currentMonthShifts.filter(
     (shift) => shift.type === "night"
   ).length;
 
-  const vacationShifts = shifts.filter(
+  const vacationShifts = currentMonthShifts.filter(
     (shift) => shift.type === "vacation"
   ).length;
 
-  const holidayShifts = shifts.filter(
+  const holidayShifts = currentMonthShifts.filter(
     (shift) => Boolean(shift.holiday)
   ).length;
 
-  const weekendShifts = shifts.filter((shift) => {
+  const weekendShifts = currentMonthShifts.filter((shift) => {
     if (shift.weekend) {
       return true;
     }
@@ -97,7 +118,7 @@ function Home() {
     );
   }).length;
 
-  const totalHours = shifts.reduce(
+  const totalHours = currentMonthShifts.reduce(
     (sum, shift) => sum + Number(shift.hours || 0),
     0
   );
@@ -107,6 +128,8 @@ function Home() {
       return null;
     }
 
+    // Do funkcji liczącej wynagrodzenie przekazujemy PEŁNĄ listę dyżurów (z historią),
+    // funkcja w payroll.js samodzielnie odseparuje stare dyżury do średniej urlopowej.
     const total = calculateTotalSalary(shifts, settings);
 
     return total.toFixed(2);

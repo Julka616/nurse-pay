@@ -88,9 +88,6 @@ function getEasterSunday(year) {
       return [{ date: shift.date, hours: totalHours, isNight: false }];
     }
   
-    // Podział 3h/2h/6h/1h zakłada standardowy dyżur nocny 19:00-07:00 (12h).
-    // Jeśli kiedyś pojawią się dyżury nocne o innej długości, ten podział przestanie
-    // być dokładny - na razie w całej aplikacji dyżury zawsze mają 12h.
     if (totalHours !== 12) {
       return [{ date: shift.date, hours: totalHours, isNight: true }];
     }
@@ -106,9 +103,7 @@ function getEasterSunday(year) {
   
   }
   
-  // Liczy DOPŁATĘ za jeden odcinek godzin (nie pełną stawkę godzinową!).
-  // Pensja podstawowa już pokrywa przepracowane godziny wg grafiku -
-  // tu liczymy wyłącznie dodatek za porę nocną / weekend / święto.
+  // Liczy DOPŁATĘ za jeden odcinek godzin.
   function calculateSegmentAmount(segment, settings) {
   
     const bonusPercent =
@@ -124,9 +119,9 @@ function getEasterSunday(year) {
   }
   
   // Zwraca zakres dat (YYYY-MM-DD) trzech pełnych miesięcy kalendarzowych
-// bezpośrednio poprzedzających miesiąc, w którym wypada podana data.
-function getThreeMonthWindowBefore(dateStr) {
-
+  // bezpośrednio poprzedzających miesiąc, w którym wypada podana data.
+  function getThreeMonthWindowBefore(dateStr) {
+  
     const year = Number(dateStr.slice(0, 4));
     const month = Number(dateStr.slice(5, 7)); // 1-12
   
@@ -140,12 +135,7 @@ function getThreeMonthWindowBefore(dateStr) {
   
   }
   
-  // Liczy średnią stawkę dodatków (zł/h) na podstawie przepracowanych dyżurów
-  // (nie urlopowych) w 3 pełnych miesiącach kalendarzowych poprzedzających
-  // miesiąc, w którym wypada dany dzień urlopu.
-  // Jeśli pracownik ma mniej niż 3 miesiące historii, średnia liczona jest
-  // z tego, co faktycznie jest dostępne w tym oknie (zgodnie z przepisami).
-  // Jeśli w oknie nie ma żadnych dyżurów, zwraca hasData: false.
+  // Liczy średnią stawkę dodatków (zł/h) z 3 miesięcy poprzedzających
   function getAverageBonusRate(allShifts, vacationDate, settings) {
   
     const { start, end } = getThreeMonthWindowBefore(vacationDate);
@@ -181,16 +171,36 @@ function getThreeMonthWindowBefore(dateStr) {
   
   }
   
-  // Liczy przewidywaną wypłatę na podstawie listy dyżurów i ustawień wynagrodzenia
+  // Liczy przewidywaną wypłatę WYŁĄCZNIE dla bieżącego miesiąca
   export function calculateTotalSalary(shifts, settings) {
   
     let total = Number(settings.basicSalary || 0);
   
-    shifts.forEach((shift) => {
+    if (!shifts || shifts.length === 0) {
+      return total;
+    }
+  
+    // Wyznaczanie bieżącego roku i miesiąca na podstawie najnowszego dyżuru
+    const activeDate = new Date(`${shifts[0].date}T12:00:00`);
+    const currentYear = activeDate.getFullYear();
+    const currentMonth = activeDate.getMonth();
+  
+    // Przefiltrowanie dyżurów wyłącznie do bieżącego miesiąca
+    const currentMonthShifts = shifts.filter((shift) => {
+      if (!shift.date) return false;
+      const shiftDate = new Date(`${shift.date}T12:00:00`);
+      return (
+        shiftDate.getFullYear() === currentYear &&
+        shiftDate.getMonth() === currentMonth
+      );
+    });
+  
+    currentMonthShifts.forEach((shift) => {
   
       if (shift.type === "vacation") {
   
         const hours = Number(shift.hours || 0);
+        // Do pobrania średniej przekazujemy całą listę dyżurów (z historią)
         const average = getAverageBonusRate(shifts, shift.date, settings);
   
         total += hours * average.rate;
@@ -215,14 +225,28 @@ function getThreeMonthWindowBefore(dateStr) {
   
   }
   
-  // Zwraca listę dat urlopowych, dla których nie udało się wyliczyć średniej
-  // dodatków z braku historii dyżurów w oknie 3 miesięcy poprzedzających.
-  // Przydatne do wyświetlenia ostrzeżenia w UI.
+  // Zwraca listę dat urlopowych bez historii dyżurów do wyliczenia średniej
   export function getVacationHistoryWarnings(shifts, settings) {
   
     const warnings = [];
   
-    shifts.forEach((shift) => {
+    // Ostrzeżenia sprawdzamy tylko dla urlopów z bieżącego miesiąca
+    if (!shifts || shifts.length === 0) return warnings;
+  
+    const activeDate = new Date(`${shifts[0].date}T12:00:00`);
+    const currentYear = activeDate.getFullYear();
+    const currentMonth = activeDate.getMonth();
+  
+    const currentMonthShifts = shifts.filter((shift) => {
+      if (!shift.date) return false;
+      const shiftDate = new Date(`${shift.date}T12:00:00`);
+      return (
+        shiftDate.getFullYear() === currentYear &&
+        shiftDate.getMonth() === currentMonth
+      );
+    });
+  
+    currentMonthShifts.forEach((shift) => {
   
       if (shift.type !== "vacation" || !shift.date) {
         return;
