@@ -10,18 +10,32 @@ const router = express.Router();
 
 // Konfiguracja wysyłki maili (np. Gmail)
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // port 587 wymaga secure: false
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
     tls: {
-      rejectUnauthorized: false,
-    },
-    family: 4, // Wymusza IPv4, aby uniknąć błędów ENETUNREACH (IPv6)
+      rejectUnauthorized: false
+    }
   });
+  const mailOptions = {
+    from: `"NursePay" <${process.env.EMAIL_USER}>`, // Musi być dokładnie ten sam email co w EMAIL_USER!
+    to: user.email.trim(),
+    subject: "🔑 Resetowanie hasła - NursePay",
+    html: `
+      <div style="font-family: sans-serif; max-width: 500px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <h2 style="color: #0284c7;">Cześć ${user.firstName}!</h2>
+        <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w aplikacji NursePay.</p>
+        <p>Kliknij w poniższy przycisk, aby ustawić nowe hasło. Link jest ważny przez 1 godzinę:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" style="background-color: #0284c7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            Zresetuj hasło
+          </a>
+        </div>
+      </div>
+    `,
+  };
 
 // Rejestracja
 router.post("/register", async (req, res) => {
