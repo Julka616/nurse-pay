@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../utils/api";
-
+import { calculateTotalSalary } from "../utils/payroll";
 
 function Home() {
 
@@ -156,99 +156,7 @@ function Home() {
       return null;
     }
 
-
-    let total =
-      Number(settings.basicSalary || 0);
-
-
-    shifts.forEach((shift) => {
-
-      if (shift.type === "vacation") {
-
-        total += Number(settings.vacationDailyRate || 0);
-
-        return;
-
-      }
-
-
-      const hours =
-        Number(shift.hours || 0);
-
-
-      const hourRate =
-        Number(settings.hourRate || 0);
-
-
-      let amount =
-        hours * hourRate;
-
-
-      if (!shift.date) {
-
-        total += amount;
-
-        return;
-
-      }
-
-
-      const date =
-        new Date(`${shift.date}T12:00:00`);
-
-
-      const day =
-        date.getDay();
-
-
-
-      if (shift.type === "night") {
-
-        amount +=
-          amount *
-          Number(settings.nightPercent || 0) /
-          100;
-
-      }
-
-
-
-      if (day === 6) {
-
-        amount +=
-          amount *
-          Number(settings.saturdayPercent || 0) /
-          100;
-
-      }
-
-
-
-      if (day === 0) {
-
-        amount +=
-          amount *
-          Number(settings.sundayPercent || 0) /
-          100;
-
-      }
-
-
-
-      if (shift.holiday) {
-
-        amount +=
-          amount *
-          Number(settings.holidayPercent || 0) /
-          100;
-
-      }
-
-
-      total += amount;
-
-    });
-
+    const total = calculateTotalSalary(shifts, settings);
 
     return total.toFixed(2);
 
