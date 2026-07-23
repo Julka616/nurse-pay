@@ -5,7 +5,6 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 
 const User = require("../models/User");
-const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -83,10 +82,9 @@ router.post("/login", async (req, res) => {
 });
 
 // Zmiana hasła dla zalogowanego użytkownika (w Profilu)
-router.post("/change-password", authMiddleware, async (req, res) => {
+router.post("/change-password", async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.user.id || req.user._id;
+    const { currentPassword, newPassword, userId } = req.body;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -127,7 +125,7 @@ router.post("/forgot-password", async (req, res) => {
     await user.save();
 
     // Link prowadzący do formularza ustawiania nowego hasła na frontendzie
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const clientUrl = process.env.CLIENT_URL || "https://nurse-pay.vercel.app";
     const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
 
     const mailOptions = {
