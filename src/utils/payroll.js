@@ -124,9 +124,9 @@ function getEasterSunday(year) {
   }
   
   // Zwraca zakres dat (YYYY-MM-DD) trzech pełnych miesięcy kalendarzowych
-  // bezpośrednio poprzedzających miesiąc, w którym wypada podana data.
-  function getThreeMonthWindowBefore(dateStr) {
-  
+// bezpośrednio poprzedzających miesiąc, w którym wypada podana data.
+function getThreeMonthWindowBefore(dateStr) {
+
     const year = Number(dateStr.slice(0, 4));
     const month = Number(dateStr.slice(5, 7)); // 1-12
   
@@ -143,6 +143,9 @@ function getEasterSunday(year) {
   // Liczy średnią stawkę dodatków (zł/h) na podstawie przepracowanych dyżurów
   // (nie urlopowych) w 3 pełnych miesiącach kalendarzowych poprzedzających
   // miesiąc, w którym wypada dany dzień urlopu.
+  // Jeśli pracownik ma mniej niż 3 miesiące historii, średnia liczona jest
+  // z tego, co faktycznie jest dostępne w tym oknie (zgodnie z przepisami).
+  // Jeśli w oknie nie ma żadnych dyżurów, zwraca hasData: false.
   function getAverageBonusRate(allShifts, vacationDate, settings) {
   
     const { start, end } = getThreeMonthWindowBefore(vacationDate);
@@ -171,10 +174,10 @@ function getEasterSunday(year) {
     });
   
     if (sumHours === 0) {
-      return 0;
+      return { rate: 0, hasData: false };
     }
   
-    return sumBonus / sumHours;
+    return { rate: sumBonus / sumHours, hasData: true };
   
   }
   
@@ -188,9 +191,9 @@ function getEasterSunday(year) {
       if (shift.type === "vacation") {
   
         const hours = Number(shift.hours || 0);
-        const averageRate = getAverageBonusRate(shifts, shift.date, settings);
+        const average = getAverageBonusRate(shifts, shift.date, settings);
   
-        total += hours * averageRate;
+        total += hours * average.rate;
   
         return;
   
@@ -209,5 +212,30 @@ function getEasterSunday(year) {
     });
   
     return total;
+  
+  }
+  
+  // Zwraca listę dat urlopowych, dla których nie udało się wyliczyć średniej
+  // dodatków z braku historii dyżurów w oknie 3 miesięcy poprzedzających.
+  // Przydatne do wyświetlenia ostrzeżenia w UI.
+  export function getVacationHistoryWarnings(shifts, settings) {
+  
+    const warnings = [];
+  
+    shifts.forEach((shift) => {
+  
+      if (shift.type !== "vacation" || !shift.date) {
+        return;
+      }
+  
+      const average = getAverageBonusRate(shifts, shift.date, settings);
+  
+      if (!average.hasData) {
+        warnings.push(shift.date);
+      }
+  
+    });
+  
+    return warnings;
   
   }
